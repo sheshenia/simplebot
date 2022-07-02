@@ -12,8 +12,11 @@ import (
 
 func run(ctx context.Context) error {
 	var (
-		token = flag.String("token", "", "telegram bot  token")
-		debug = flag.Bool("debug", false, "debug mode")
+		token   = flag.String("token", "", "telegram bot  token")
+		debug   = flag.Bool("debug", false, "debug mode")
+		webHook = flag.String("webhook", "", "if not empty Telegram bot starts in WebHook mode. ex: examplebot.com")
+		whPort  = flag.String("port", ":8081", "web hook port")
+		whPath  = flag.String("path", "/", "web hook path")
 	)
 	flag.Parse()
 
@@ -22,9 +25,19 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	log.Println(bot)
+	updates, err := bot.registerUpdates(*webHook, *whPort, *whPath)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case update := <-updates:
+			log.Println(update)
+		}
+	}
 }
 
 func main() {
