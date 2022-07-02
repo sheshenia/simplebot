@@ -1,5 +1,7 @@
 package main
 
+import "errors"
+
 const (
 	CmdStart = "start"
 	CmdHome  = "home"
@@ -11,5 +13,10 @@ const (
 )
 
 const (
-	TextCmdStart = "Simple images Telegram bot"
+	TextCmdStart       = "Simple images Telegram bot"
+	TextUnknownMessage = "I don't understand you, please type correct image category!"
+)
+
+var (
+	ErrUnknownCommand = errors.New("unknown bot command")
 )

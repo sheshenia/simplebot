@@ -40,7 +40,11 @@ func run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case update := <-updates:
-			log.Println(update)
+			if update.Message != nil {
+				if err := bot.handleMessage(update.Message); err != nil && bot.Debug {
+					log.Println(err)
+				}
+			}
 		}
 	}
 }

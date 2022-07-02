@@ -104,16 +104,19 @@ func (b *Bot) registerUpdates(webHook, whPort, whPath string) (updates tgbotapi.
 
 func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 	newMsg := tgbotapi.NewMessage(msg.Chat.ID, "")
+	msg.Text = strings.TrimSpace(msg.Text)
+	opts := Opts{
+		Msg:    msg,
+		NewMsg: &newMsg,
+	}
+
 	defer func() {
-		if newMsg.Text != "" {
-			_, err = b.Bot.Send(newMsg)
+		if opts.NewMsg.Text != "" {
+			_, err = b.Bot.Send(opts.NewMsg)
 		}
 	}()
 
-	msg.Text = strings.TrimSpace(msg.Text)
-
 	if msg.IsCommand() {
-		// process media
 		for _, cat := range b.Media.Categories {
 			if cat.Name == msg.Command() {
 				if err := b.SendMediaToChat(msg.Chat.ID, cat.ID); err != nil {
@@ -122,11 +125,45 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 				return nil
 			}
 		}
-		//botcmd.HandleCmd(msg, &newMsg)
+		return b.handleBotCommand(&opts)
+	}
+
+	if b.handleTextCommand(&opts) {
 		return nil
 	}
 
+	// process media buttons click keyboard
+	for _, cat := range b.Media.Categories {
+		if cat.TxtName == msg.Text {
+			if err := b.SendMediaToChat(msg.Chat.ID, cat.ID); err != nil {
+				log.Println(err)
+			}
+			return nil
+		}
+	}
+	opts.NewMsg.Text = TextUnknownMessage
+	opts.NewMsg.ReplyMarkup = b.MainMenu
 	return nil
+}
+
+func (b *Bot) handleBotCommand(opts *Opts) error {
+	// if founded, process command
+	if cmd, ok := b.TlgCmds[opts.Msg.Command()]; ok {
+		cmd(opts)
+		return nil
+	}
+	opts.NewMsg.Text = ErrUnknownCommand.Error()
+	opts.NewMsg.ReplyMarkup = b.MainMenu
+	return ErrUnknownCommand
+}
+
+func (b *Bot) handleTextCommand(opts *Opts) bool {
+	// if founded, process text command
+	if cmd, ok := b.TxtCmds[opts.Msg.Text]; ok {
+		cmd(opts)
+		return true
+	}
+	return false
 }
 
 func (b *Bot) SendMediaToChat(chatID int64, imgCatID uint8) error {
