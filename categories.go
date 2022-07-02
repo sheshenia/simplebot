@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +19,8 @@ const (
 )
 
 type Media struct {
-	Categories map[uint8]MediaCategory
-	IDs        UIntSlice
+	Categories []*MediaCategory
+	IDs        []uint8
 	IDsSum     uint8
 }
 
@@ -30,7 +31,7 @@ func NewMedia() (*Media, error) {
 	if err != nil {
 		return nil, fmt.Errorf("mediaCategories read dir: %w", err)
 	}
-	m := &Media{Categories: make(map[uint8]MediaCategory)}
+	m := &Media{Categories: make([]*MediaCategory, 0)}
 	for _, f := range files {
 		if f.IsDir() || filepath.Ext(f.Name()) != ".json" {
 			continue
@@ -40,21 +41,29 @@ func NewMedia() (*Media, error) {
 			log.Println(err)
 			continue
 		}
-		var mf MediaCategory
-		if err := json.Unmarshal(b, &mf); err != nil {
+		var mc MediaCategory
+		if err := json.Unmarshal(b, &mc); err != nil {
 			log.Println(err)
 			continue
 		}
-		m.Categories[mf.ID] = mf
+		m.Categories = append(m.Categories, &mc)
+		m.IDsSum = m.IDsSum | mc.ID
 	}
+
+	if len(m.Categories) == 0 {
+		return nil, errors.New("no media categories")
+	}
+
+	sort.Slice(m.Categories, func(i, j int) bool {
+		return m.Categories[i].ID < m.Categories[j].ID
+	})
 
 	m.IDs = make([]uint8, 0, len(m.Categories))
-
-	for _, cat := range m.Categories {
-		m.IDs = append(m.IDs, cat.ID)
-		m.IDsSum = m.IDsSum | cat.ID
+	for _, mc := range m.Categories {
+		m.IDs = append(m.IDs, mc.ID)
+		//fmt.Println(*mc)
 	}
-	sort.Sort(m.IDs)
+
 	return m, nil
 }
 
@@ -68,17 +77,11 @@ type MediaCategory struct {
 	TxtName string `json:"txt_name"` // _ - space, 18p - 18+
 }
 
-type UIntSlice []uint8
-
-func (x UIntSlice) Len() int           { return len(x) }
-func (x UIntSlice) Less(i, j int) bool { return x[i] < x[j] }
-func (x UIntSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
-
 func (m *Media) extractCatIDs(catJoinedIDs uint8) []uint8 {
 	if catJoinedIDs == 0 || catJoinedIDs == m.IDsSum {
 		return m.IDs
 	}
-	cats := []uint8{}
+	cats := make([]uint8, 0)
 	for _, id := range m.IDs {
 		if id&catJoinedIDs > 0 {
 			cats = append(cats, id)
@@ -92,8 +95,8 @@ func (m *Media) randomImage(catJoinedIDs uint8) string {
 	fromCats := m.extractCatIDs(catJoinedIDs)
 	n := rand.Intn(len(fromCats))
 
-	cat, ok := m.Categories[fromCats[n]]
-	if !ok {
+	cat := m.GetCatById(fromCats[n])
+	if cat == nil {
 		log.Println("!ok MediaCategories[fromNames[catID]]", fromCats[n])
 		return DefaultImageHref
 	}
@@ -105,4 +108,13 @@ func (m *Media) randomImage(catJoinedIDs uint8) string {
 		return fileName
 	}
 	return cat.Path + fileName
+}
+
+func (m *Media) GetCatById(catID uint8) *MediaCategory {
+	for key := range m.Categories {
+		if m.Categories[key].ID == catID {
+			return m.Categories[key]
+		}
+	}
+	return nil
 }

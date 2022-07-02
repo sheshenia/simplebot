@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,9 +39,6 @@ func NewBot(token string, debug bool) (*Bot, error) {
 		return nil, err
 	}
 
-	if len(myBot.Media.IDs) == 0 {
-		return nil, errors.New("no media categories")
-	}
 	myBot.initMainMenu()
 
 	return myBot, nil
@@ -106,12 +105,69 @@ func (b *Bot) initMedia() (err error) {
 
 func (b *Bot) initMainMenu() {
 	b.MainMenu = tgbotapi.NewReplyKeyboard()
-	for key, id := range b.Media.IDs {
+	for key, cat := range b.Media.Categories {
 		if (key)%3 == 0 {
 			b.MainMenu.Keyboard = append(b.MainMenu.Keyboard, tgbotapi.NewKeyboardButtonRow())
 		}
-		btn := tgbotapi.NewKeyboardButton(b.Media.Categories[id].TxtName)
+		btn := tgbotapi.NewKeyboardButton(cat.TxtName)
 		r := len(b.MainMenu.Keyboard) - 1 // last row ID
 		b.MainMenu.Keyboard[r] = append(b.MainMenu.Keyboard[r], btn)
 	}
+}
+
+func (b *Bot) printCommands() {
+	fmt.Println("show commands")
+	for _, cat := range b.Media.Categories {
+		fmt.Println(cat.Name, "- random", cat.TxtName)
+	}
+}
+
+func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
+	newMsg := tgbotapi.NewMessage(msg.Chat.ID, "")
+	defer func() {
+		if newMsg.Text != "" {
+			_, err = b.Bot.Send(newMsg)
+		}
+	}()
+
+	msg.Text = strings.TrimSpace(msg.Text)
+
+	if msg.IsCommand() {
+		// process media
+		for _, cat := range b.Media.Categories {
+			if cat.Name == msg.Command() {
+				if err := b.SendMediaToChat(msg.Chat.ID, cat.ID); err != nil {
+					log.Println(err)
+				}
+				return nil
+			}
+		}
+		//botcmd.HandleCmd(msg, &newMsg)
+		return nil
+	}
+
+	return nil
+}
+
+func (b *Bot) SendMediaToChat(chatID int64, imgCatID uint8) error {
+	img := b.Media.randomImage(imgCatID)
+	ext := strings.ToLower(filepath.Ext(img))
+
+	var myMsg tgbotapi.Chattable
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".bmp", ".webp":
+		myMsg = tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
+	case ".gif", ".mp4":
+		/*myA := tgbotapi.NewAnimation(chatID, tgbotapi.FileURL(img))
+		myA.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ch","ch")))
+		myMsg = myA*/
+		myMsg = tgbotapi.NewAnimation(chatID, tgbotapi.FileURL(img))
+	/*case ".webm":
+	myMsg = tgbotapi.VideoConfig{}*/
+	default:
+		myMsg = tgbotapi.NewDocument(chatID, tgbotapi.FileURL(img))
+	}
+	_, err := b.Bot.Send(myMsg)
+	return err
 }
