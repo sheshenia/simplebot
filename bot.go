@@ -15,7 +15,9 @@ import (
 type Bot struct {
 	*Globals
 
+	// TlgCmds bot commands
 	TlgCmds map[string]func(opts *Opts)
+	// Text commands, from buttons or text
 	TxtCmds map[string]func(opts *Opts)
 
 	*Media
@@ -40,6 +42,8 @@ func NewBot(token string, debug bool) (*Bot, error) {
 	}
 
 	myBot.initMainMenu()
+	myBot.initTlgCmds()
+	myBot.initTextCmds()
 
 	return myBot, nil
 }
@@ -96,30 +100,6 @@ func (b *Bot) registerUpdates(webHook, whPort, whPath string) (updates tgbotapi.
 	go http.ListenAndServe(whPort, nil)
 	updates = b.Globals.Bot.ListenForWebhook(whPath)
 	return
-}
-
-func (b *Bot) initMedia() (err error) {
-	b.Media, err = NewMedia()
-	return
-}
-
-func (b *Bot) initMainMenu() {
-	b.MainMenu = tgbotapi.NewReplyKeyboard()
-	for key, cat := range b.Media.Categories {
-		if (key)%3 == 0 {
-			b.MainMenu.Keyboard = append(b.MainMenu.Keyboard, tgbotapi.NewKeyboardButtonRow())
-		}
-		btn := tgbotapi.NewKeyboardButton(cat.TxtName)
-		r := len(b.MainMenu.Keyboard) - 1 // last row ID
-		b.MainMenu.Keyboard[r] = append(b.MainMenu.Keyboard[r], btn)
-	}
-}
-
-func (b *Bot) printCommands() {
-	fmt.Println("show commands")
-	for _, cat := range b.Media.Categories {
-		fmt.Println(cat.Name, "- random", cat.TxtName)
-	}
 }
 
 func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
