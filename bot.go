@@ -15,6 +15,9 @@ type Bot struct {
 
 	TlgCmds map[string]func(opts *Opts)
 	TxtCmds map[string]func(opts *Opts)
+
+	*Media
+	MainMenu tgbotapi.ReplyKeyboardMarkup
 }
 
 func NewBot(token string, debug bool) (*Bot, error) {
@@ -28,7 +31,18 @@ func NewBot(token string, debug bool) (*Bot, error) {
 	}
 	bot.Debug = debug
 
-	return &Bot{Globals: NewGlobals(bot, debug)}, nil
+	myBot := &Bot{Globals: NewGlobals(bot, debug)}
+
+	if err := myBot.initMedia(); err != nil {
+		return nil, err
+	}
+
+	if len(myBot.Media.IDs) == 0 {
+		return nil, errors.New("no media categories")
+	}
+	myBot.initMainMenu()
+
+	return myBot, nil
 }
 
 type Globals struct {
@@ -83,4 +97,21 @@ func (b *Bot) registerUpdates(webHook, whPort, whPath string) (updates tgbotapi.
 	go http.ListenAndServe(whPort, nil)
 	updates = b.Globals.Bot.ListenForWebhook(whPath)
 	return
+}
+
+func (b *Bot) initMedia() (err error) {
+	b.Media, err = NewMedia()
+	return
+}
+
+func (b *Bot) initMainMenu() {
+	b.MainMenu = tgbotapi.NewReplyKeyboard()
+	for key, id := range b.Media.IDs {
+		if (key)%3 == 0 {
+			b.MainMenu.Keyboard = append(b.MainMenu.Keyboard, tgbotapi.NewKeyboardButtonRow())
+		}
+		btn := tgbotapi.NewKeyboardButton(b.Media.Categories[id].TxtName)
+		r := len(b.MainMenu.Keyboard) - 1 // last row ID
+		b.MainMenu.Keyboard[r] = append(b.MainMenu.Keyboard[r], btn)
+	}
 }
