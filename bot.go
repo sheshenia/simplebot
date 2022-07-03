@@ -117,13 +117,8 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 	}()
 
 	if msg.IsCommand() {
-		for _, cat := range b.Media.Categories {
-			if cat.Name == msg.Command() {
-				if err := b.SendMediaToChat(msg.Chat.ID, cat.ID); err != nil {
-					log.Println(err)
-				}
-				return nil
-			}
+		if b.handleMediaTlgTxtCommand(&opts, true) {
+			return nil
 		}
 		return b.handleBotCommand(&opts)
 	}
@@ -133,14 +128,10 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 	}
 
 	// process media buttons click keyboard
-	for _, cat := range b.Media.Categories {
-		if cat.TxtName == msg.Text {
-			if err := b.SendMediaToChat(msg.Chat.ID, cat.ID); err != nil {
-				log.Println(err)
-			}
-			return nil
-		}
+	if b.handleMediaTlgTxtCommand(&opts, false) {
+		return nil
 	}
+
 	opts.NewMsg.Text = TextUnknownMessage
 	opts.NewMsg.ReplyMarkup = b.MainMenu
 	return nil
@@ -162,6 +153,18 @@ func (b *Bot) handleTextCommand(opts *Opts) bool {
 	if cmd, ok := b.TxtCmds[opts.Msg.Text]; ok {
 		cmd(opts)
 		return true
+	}
+	return false
+}
+
+func (b *Bot) handleMediaTlgTxtCommand(opts *Opts, isCmd bool) bool {
+	for _, cat := range b.Media.Categories {
+		if (isCmd && cat.Name == opts.Msg.Command()) || (!isCmd && cat.TxtName == opts.Msg.Text) {
+			if err := b.SendMediaToChat(opts.Msg.Chat.ID, cat.ID); err != nil {
+				log.Println(err)
+			}
+			return true
+		}
 	}
 	return false
 }
