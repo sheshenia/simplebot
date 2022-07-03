@@ -36,7 +36,7 @@ simplebot-%-$(VERSION).zip: simplebot-%
 	# move binary to release folder
 	mv ./simplebot-$(*) ./simplebot-$(*)-$(VERSION)
 	# move all release folder content to archive
-	cd ./simplebot-$(*)-$(VERSION) && zip -m ../$@ *
+	cd ./simplebot-$(*)-$(VERSION) && zip -mr ../$@ *
 	# delete release folder
 	rm -r ./simplebot-$(*)-$(VERSION)
 
@@ -64,4 +64,4 @@ deploy: $(NAME)
 	scp $(NAME) $(ADDR):$(PATHNAME) #copy our build to remote machine,without previous step "Text file busy" error
 	ssh $(ADDR) systemctl restart $(NAME) #restart systemctl process
 
-.PHONY: my $(SIMPLEBOT) clean release test build run mediajson
+.PHONY: my $(SIMPLEBOT) clean release test build run mediajson deploy
