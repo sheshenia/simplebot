@@ -1,12 +1,12 @@
-# prefer to specify token as make env, using with: make run TOKEN=your_bot_token
-TOKEN?=your_telegram_bot_token
-DEBUG?=true
-
 VERSION = $(shell git describe --tags --always --dirty)
 # go tool nm ./bot | grep version #to get the path of the version variable
 # https://www.digitalocean.com/community/tutorials/using-ldflags-to-set-version-information-for-go-applications
 LDFLAGS=-ldflags "-X 'github.com/sheshenia/simplebot/pkg/bot.version=$(VERSION)'"
 OSARCH=$(shell go env GOHOSTOS)-$(shell go env GOHOSTARCH)
+
+# prefer to specify token as make env, using with: make run TOKEN=your_bot_token
+TOKEN?=your_telegram_bot_token
+DEBUG?=true
 
 run:
 	go run ./cmd/bot --token=$(TOKEN) --debug=$(DEBUG)
@@ -49,5 +49,19 @@ release: \
 # generates json files from media folders in assets
 mediajson:
 	cd ./assets && ./mediajson.sh
+
+
+# deploy on Linux CentOS server. All this vars are replaced with arguments
+# make deploy IP=some.ip USER=some_user
+IP=127.0.0.1
+USER=root
+ADDR=$(USER)@$(IP)
+NAME=simplebot-linux-amd64
+PATHNAME=/opt/app/simplebot/$(NAME)
+
+deploy: $(NAME)
+	ssh $(ADDR) rm $(PATHNAME) #removes file but doesn't stop the systemctl process https://www.linuxquestions.org/questions/linux-general-1/scp-text-file-busy-error-365198/
+	scp $(NAME) $(ADDR):$(PATHNAME) #copy our build to remote machine,without previous step "Text file busy" error
+	ssh $(ADDR) systemctl restart $(NAME) #restart systemctl process
 
 .PHONY: my $(SIMPLEBOT) clean release test build run mediajson
