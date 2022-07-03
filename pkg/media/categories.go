@@ -1,4 +1,4 @@
-package main
+package media
 
 import (
 	"encoding/json"
@@ -19,19 +19,19 @@ const (
 )
 
 type Media struct {
-	Categories []*MediaCategory
+	Categories []*Category
 	IDs        []uint8
 	IDsSum     uint8
 }
 
-func NewMedia() (*Media, error) {
+func New() (*Media, error) {
 	rand.Seed(time.Now().Unix())
 	folder := filepath.Join(".", "assets")
 	files, err := ioutil.ReadDir(folder)
 	if err != nil {
 		return nil, fmt.Errorf("mediaCategories read dir: %w", err)
 	}
-	m := &Media{Categories: make([]*MediaCategory, 0)}
+	m := &Media{Categories: make([]*Category, 0)}
 	for _, f := range files {
 		if f.IsDir() || filepath.Ext(f.Name()) != ".json" {
 			continue
@@ -41,7 +41,7 @@ func NewMedia() (*Media, error) {
 			log.Println(err)
 			continue
 		}
-		var mc MediaCategory
+		var mc Category
 		if err := json.Unmarshal(b, &mc); err != nil {
 			log.Println(err)
 			continue
@@ -67,7 +67,7 @@ func NewMedia() (*Media, error) {
 	return m, nil
 }
 
-type MediaCategory struct {
+type Category struct {
 	Name     string   `json:"name"`
 	ID       uint8    `json:"id"`
 	Internal bool     `json:"internal"`
@@ -77,7 +77,7 @@ type MediaCategory struct {
 	TxtName string `json:"txt_name"` // _ - space, 18p - 18+
 }
 
-func (m *Media) extractCatIDs(catJoinedIDs uint8) []uint8 {
+func (m *Media) ExtractCatIDs(catJoinedIDs uint8) []uint8 {
 	if catJoinedIDs == 0 || catJoinedIDs == m.IDsSum {
 		return m.IDs
 	}
@@ -90,9 +90,9 @@ func (m *Media) extractCatIDs(catJoinedIDs uint8) []uint8 {
 	return cats
 }
 
-// randomImage 1 && 2 && 4 : can be 1, 2, 3, 4, 5, 6, 7  // but 0 - all
-func (m *Media) randomImage(catJoinedIDs uint8) string {
-	fromCats := m.extractCatIDs(catJoinedIDs)
+// RandomImage 1 && 2 && 4 : can be 1, 2, 3, 4, 5, 6, 7  // but 0 - all
+func (m *Media) RandomImage(catJoinedIDs uint8) string {
+	fromCats := m.ExtractCatIDs(catJoinedIDs)
 	n := rand.Intn(len(fromCats))
 
 	cat := m.GetCatById(fromCats[n])
@@ -110,7 +110,7 @@ func (m *Media) randomImage(catJoinedIDs uint8) string {
 	return cat.Path + fileName
 }
 
-func (m *Media) GetCatById(catID uint8) *MediaCategory {
+func (m *Media) GetCatById(catID uint8) *Category {
 	for key := range m.Categories {
 		if m.Categories[key].ID == catID {
 			return m.Categories[key]

@@ -1,16 +1,12 @@
-package main
+package bot
 
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
-func run(ctx context.Context) error {
+func Run(ctx context.Context) error {
 	var (
 		token        = flag.String("token", "", "telegram bot  token")
 		debug        = flag.Bool("debug", false, "debug mode")
@@ -46,20 +42,5 @@ func run(ctx context.Context) error {
 				}
 			}
 		}
-	}
-}
-
-func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-c
-		fmt.Println("Program halted!")
-		signal.Stop(c)
-		cancel()
-	}()
-	if err := run(ctx); err != nil {
-		log.Fatalln(err)
 	}
 }

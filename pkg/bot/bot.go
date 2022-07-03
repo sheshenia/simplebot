@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"errors"
@@ -10,20 +10,30 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sheshenia/simplebot/pkg/caption"
+	"github.com/sheshenia/simplebot/pkg/media"
 )
 
+// Bot is our main structure with all info and methods to process (handle)
+// bot commands, text buttons commands and other
 type Bot struct {
+	// Telegram bot API, debug end other general data
 	*Globals
 
-	// TlgCmds bot commands
+	// Telegram bot commands /start /stop /home etc...
 	TlgCmds map[string]func(opts *Opts)
+
 	// Text commands, from buttons or text
 	TxtCmds map[string]func(opts *Opts)
 
-	*Media
+	// media categories' info, containing all we need to handle media (commands, buttons pressed etc)
+	*media.Media
+
+	// Main buttons menu, containing media categories data
 	MainMenu tgbotapi.ReplyKeyboardMarkup
 }
 
+// NewBot creates bot instance. Init all data like commands, text commands, media categories
 func NewBot(token string, debug bool) (*Bot, error) {
 	if token == "" {
 		return nil, errors.New("empty token")
@@ -57,11 +67,15 @@ func NewGlobals(bot *tgbotapi.BotAPI, debug bool) *Globals {
 	return &Globals{Bot: bot, Debug: debug}
 }
 
+// Opts is used in bot & txt command function handlers
 type Opts struct {
 	Msg    *tgbotapi.Message
 	NewMsg *tgbotapi.MessageConfig
 }
 
+// registerUpdates creates subscriptions to the updates channel. In common or webhook mode.
+// What to choose depends on bot usage. But in general if you plan to use on server
+// with multiple users Webhook is preferred.
 func (b *Bot) registerUpdates(webHook, whPort, whPath string) (updates tgbotapi.UpdatesChannel, err error) {
 	webHook = strings.TrimSpace(webHook)
 	if webHook == "" {
@@ -102,6 +116,9 @@ func (b *Bot) registerUpdates(webHook, whPort, whPath string) (updates tgbotapi.
 	return
 }
 
+// handleMessage processes update.Message from Telegram API.
+// It can be bot commands or text commands from buttons.
+// Here we detect all possible scenarios and handle them.
 func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 	newMsg := tgbotapi.NewMessage(msg.Chat.ID, "")
 	msg.Text = strings.TrimSpace(msg.Text)
@@ -127,12 +144,13 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 		return nil
 	}
 
-	// process media buttons click keyboard
+	// process media buttons click from MainMenu
 	if b.handleMediaTlgTxtCommand(&opts, false) {
 		return nil
 	}
 
-	opts.NewMsg.Text = TextUnknownMessage
+	// if no handlers founded inform user
+	opts.NewMsg.Text = caption.TextUnknownMessage
 	opts.NewMsg.ReplyMarkup = b.MainMenu
 	return nil
 }
@@ -143,9 +161,9 @@ func (b *Bot) handleBotCommand(opts *Opts) error {
 		cmd(opts)
 		return nil
 	}
-	opts.NewMsg.Text = ErrUnknownCommand.Error()
+	opts.NewMsg.Text = caption.ErrUnknownCommand.Error()
 	opts.NewMsg.ReplyMarkup = b.MainMenu
-	return ErrUnknownCommand
+	return caption.ErrUnknownCommand
 }
 
 func (b *Bot) handleTextCommand(opts *Opts) bool {
@@ -170,7 +188,7 @@ func (b *Bot) handleMediaTlgTxtCommand(opts *Opts, isCmd bool) bool {
 }
 
 func (b *Bot) SendMediaToChat(chatID int64, imgCatID uint8) error {
-	img := b.Media.randomImage(imgCatID)
+	img := b.Media.RandomImage(imgCatID)
 	ext := strings.ToLower(filepath.Ext(img))
 
 	var myMsg tgbotapi.Chattable
