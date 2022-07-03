@@ -3,30 +3,41 @@ package bot
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
+)
+
+var (
+	version = "unknown" // overridden by -ldflags -X
 )
 
 func Run(ctx context.Context) error {
 	var (
-		token        = flag.String("token", "", "telegram bot  token")
-		debug        = flag.Bool("debug", false, "debug mode")
-		webHook      = flag.String("webhook", "", "if not empty Telegram bot starts in WebHook mode. ex: examplebot.com")
-		whPort       = flag.String("port", ":8081", "web hook port")
-		whPath       = flag.String("path", "/", "web hook path")
-		showCommands = flag.Bool("commands", false, "show bot commands at startup")
+		flToken        = flag.String("token", "", "telegram bot  token")
+		flDebug        = flag.Bool("debug", false, "debug mode")
+		flWebHook      = flag.String("webhook", "", "if not empty Telegram bot starts in WebHook mode. ex: examplebot.com")
+		flWhPort       = flag.String("port", ":8081", "web hook port")
+		flWhPath       = flag.String("path", "/", "web hook path")
+		flShowCommands = flag.Bool("commands", false, "show bot commands at startup")
+		flVersion      = flag.Bool("version", false, "print version")
 	)
 	flag.Parse()
 
-	bot, err := NewBot(*token, *debug)
+	if *flVersion {
+		fmt.Println(version)
+		return nil
+	}
+
+	bot, err := NewBot(*flToken, *flDebug)
 	if err != nil {
 		return err
 	}
 
-	if *showCommands {
+	if *flShowCommands {
 		bot.printCommands()
 	}
 
-	updates, err := bot.registerUpdates(*webHook, *whPort, *whPath)
+	updates, err := bot.registerUpdates(*flWebHook, *flWhPort, *flWhPath)
 	if err != nil {
 		return err
 	}

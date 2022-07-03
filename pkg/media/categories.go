@@ -68,13 +68,11 @@ func New() (*Media, error) {
 }
 
 type Category struct {
-	Name     string   `json:"name"`
-	ID       uint8    `json:"id"`
-	Internal bool     `json:"internal"`
-	Path     string   `json:"path,omitempty"`
-	Files    []string `json:"files"`
-
-	TxtName string `json:"txt_name"` // _ - space, 18p - 18+
+	TxtName string   `json:"txt_name"`
+	Name    string   `json:"name"`
+	ID      uint8    `json:"id"`
+	Path    string   `json:"path,omitempty"`
+	Files   []string `json:"files"`
 }
 
 func (m *Media) ExtractCatIDs(catJoinedIDs uint8) []uint8 {

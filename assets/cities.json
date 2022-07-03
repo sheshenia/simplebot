@@ -1,0 +1,15 @@
+{
+	"id":1,
+	"txt_name":"\uD83C\uDF07 cities",
+	"name":"cities",
+	"path":"./assets/cities/",
+	"files": [
+"00228626967e393054f44cdeea98dd2e.jpg", "002e4956f4be0c777f8c81d17bcb63d2.jpg",
+"005551422cb1df53fb4c15d1608e55c2.jpg", "006d2098f5cbfd89adfb9441207658d1.jpg",
+"0088c059d5c214bc4be3d139956abb54.jpg", "00a8b05cba1c5a528b58c10c0b92bb44.jpg",
+"00aa2b177562cc05ba8f136e4e3b1003.jpg", "00bee0148b9e59f0f866b9ba5c0a5431.jpg",
+"00cc995393679070a0923046e6bd68c1.jpg", "00ebd7453ccf2f30992b8de88a5143db.jpg",
+"00fbaf44dce9a4676a7c14762220f8c3.jpg", "0132ce66f0a833b93994a0959c7ac41a.jpg",
+"01419c57b7718fb9b5dc12ba18633cb8.jpg", "0150d0c5ded9ddf44b6eb8537aef3ed1.jpg",
+"016051303b1ce141f54b62f723bbea10.jpg"]
+}

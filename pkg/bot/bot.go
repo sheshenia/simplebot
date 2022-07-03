@@ -191,20 +191,28 @@ func (b *Bot) SendMediaToChat(chatID int64, imgCatID uint8) error {
 	img := b.Media.RandomImage(imgCatID)
 	ext := strings.ToLower(filepath.Ext(img))
 
-	var myMsg tgbotapi.Chattable
+	var (
+		myMsg  tgbotapi.Chattable
+		imgRfd tgbotapi.RequestFileData
+	)
+	if strings.HasPrefix(img, "http") {
+		imgRfd = tgbotapi.FileURL(img)
+	} else {
+		imgRfd = tgbotapi.FilePath(img)
+	}
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".bmp", ".webp":
-		myMsg = tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
+		myMsg = tgbotapi.NewPhoto(chatID, imgRfd)
 	case ".gif", ".mp4":
 		/*myA := tgbotapi.NewAnimation(chatID, tgbotapi.FileURL(img))
 		myA.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("ch","ch")))
 		myMsg = myA*/
-		myMsg = tgbotapi.NewAnimation(chatID, tgbotapi.FileURL(img))
+		myMsg = tgbotapi.NewAnimation(chatID, imgRfd)
 	/*case ".webm":
 	myMsg = tgbotapi.VideoConfig{}*/
 	default:
-		myMsg = tgbotapi.NewDocument(chatID, tgbotapi.FileURL(img))
+		myMsg = tgbotapi.NewDocument(chatID, imgRfd)
 	}
 	_, err := b.Bot.Send(myMsg)
 	return err
