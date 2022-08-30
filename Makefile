@@ -31,10 +31,12 @@ clean:
 simplebot-%-$(VERSION).zip: simplebot-%
 	# creating the release folder with GOOS-VERSION
 	mkdir simplebot-$(*)-$(VERSION)
-	# copy assets to release folder $(*) = % in command
-	cp -r ./assets ./simplebot-$(*)-$(VERSION)
 	# move binary to release folder
 	mv ./simplebot-$(*) ./simplebot-$(*)-$(VERSION)
+	# adding .exe extension if windows target
+	find ./simplebot-$(*)-$(VERSION) -type f -iname "*windows*" | xargs -I % mv % "%.exe"
+	# copy assets to release folder $(*) = % in command
+	cp -r ./assets ./simplebot-$(*)-$(VERSION)
 	# move all release folder content to archive
 	cd ./simplebot-$(*)-$(VERSION) && zip -mr ../$@ *
 	# delete release folder

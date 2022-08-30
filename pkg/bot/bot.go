@@ -133,26 +133,23 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) (err error) {
 		}
 	}()
 
-	if msg.IsCommand() {
+	switch {
+	case msg.IsCommand():
 		if b.handleMediaTlgTxtCommand(&opts, true) {
 			return nil
 		}
 		return b.handleBotCommand(&opts)
-	}
 
-	if b.handleTextCommand(&opts) {
+	// b.handleMediaTlgTxtCommand - process media buttons click from MainMenu
+	case b.handleTextCommand(&opts) || b.handleMediaTlgTxtCommand(&opts, false):
 		return nil
-	}
-
-	// process media buttons click from MainMenu
-	if b.handleMediaTlgTxtCommand(&opts, false) {
-		return nil
-	}
 
 	// if no handlers founded inform user
-	opts.NewMsg.Text = caption.TextUnknownMessage
-	opts.NewMsg.ReplyMarkup = b.MainMenu
-	return nil
+	default:
+		opts.NewMsg.Text = caption.TextUnknownMessage
+		opts.NewMsg.ReplyMarkup = b.MainMenu
+		return nil
+	}
 }
 
 func (b *Bot) handleBotCommand(opts *Opts) error {
