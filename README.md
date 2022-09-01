@@ -3,7 +3,7 @@ Simple Telegram images bot - works out of the box.
 
 A good starting point for your Telegram bots and Go beginners.
 
-SimpleBot is written with Golang programming language and uses the [Telegram Bot API](https://github.com/micromdm/nanomdm) package under the hood.
+SimpleBot is written with Golang programming language and uses the [Telegram Bot API](https://github.com/go-telegram-bot-api/telegram-bot-api) package under the hood.
 ![gif](overview.gif)
 
 The step-by-step tutorial of creating this bot will be available soon.
